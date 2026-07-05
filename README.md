@@ -51,6 +51,17 @@ merge the whole set into nixpkgs via the overlay:
 nixpkgs.overlays = [ my-packages.overlays.default ];
 ```
 
+This flake pins nixpkgs to `nixos-26.05` (the last release to support
+x86_64-darwin). Consumers can rebase it onto their own nixpkgs — unstable, a
+newer stable, etc. — with:
+
+```nix
+inputs.my-packages.inputs.nixpkgs.follows = "nixpkgs";
+```
+
+(Overlay consumers get this for free: an overlay always builds against the
+package set it's applied to.)
+
 ## Updating
 
 There are two independent update axes. Package versions are pinned by
