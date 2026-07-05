@@ -4,16 +4,22 @@
 #
 # Packages are discovered automatically; adding a package.nix in the right
 # place is all that's needed.
+#
+# Discovery deliberately uses only builtins, never pkgs.lib: this set is
+# also an overlay (flake.nix passes pkgs = final), and an overlay's
+# attribute *names* must be computable without forcing the fixpoint, or
+# every consumer hits infinite recursion. Values (callPackage) may use
+# pkgs freely — they are lazy.
 { pkgs }:
 let
-  inherit (pkgs) lib;
-
   byName = ./by-name;
 
   packagesInShard =
     shard:
-    lib.mapAttrs (name: _: pkgs.callPackage (byName + "/${shard}/${name}/package.nix") { }) (
+    builtins.mapAttrs (name: _: pkgs.callPackage (byName + "/${shard}/${name}/package.nix") { }) (
       builtins.readDir (byName + "/${shard}")
     );
 in
-lib.mergeAttrsList (map packagesInShard (builtins.attrNames (builtins.readDir byName)))
+builtins.foldl' (acc: shard: acc // packagesInShard shard) { } (
+  builtins.attrNames (builtins.readDir byName)
+)
