@@ -31,7 +31,7 @@ let
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "ttn-lw-cli-bin";
-  version = "3.36.1";
+  version = "3.36.0";
 
   src =
     let
