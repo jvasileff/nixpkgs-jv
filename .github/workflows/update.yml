@@ -56,12 +56,41 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch --create "$head"
           git add --all
-          git commit --message "Automated update"
+          # nixpkgs-style message from what actually changed: subject
+          # "Update foo, nixpkgs", body "foo: 1.2 -> 1.3" per package.
+          names=()
+          body=""
+          for dir in $(git diff --cached --name-only | sed -n 's|^\(pkgs/by-name/[^/]*/[^/]*\)/.*|\1|p' | sort -u); do
+            name=$(basename "$dir")
+            old=$(git show "HEAD:$dir/package.nix" | sed -n 's/^ *version = "\([^"]*\)".*/\1/p' | head -n1)
+            new=$(sed -n 's/^ *version = "\([^"]*\)".*/\1/p' "$dir/package.nix" | head -n1)
+            names+=("$name")
+            body+="$name: ${old:-?} -> ${new:-?}"$'\n'
+          done
+          pkgcount=${#names[@]}
+          if ! git diff --cached --quiet -- flake.lock; then
+            old=$(git show HEAD:flake.lock | jq -r '.nodes.nixpkgs.locked.rev' | cut -c1-7)
+            new=$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock | cut -c1-7)
+            names+=("nixpkgs")
+            body+="nixpkgs: $old -> $new"$'\n'
+          fi
+          # Git convention: subject <= 50 chars; fall back to a count when
+          # the name list doesn't fit. Body lines stay under 72 naturally.
+          joined=$(printf '%s, ' "${names[@]}")
+          subject="Update ${joined%, }"
+          if [ "${#subject}" -gt 50 ]; then
+            subject="Update $pkgcount packages"
+            [ "$pkgcount" = "${#names[@]}" ] || subject+=" and nixpkgs"
+          fi
+          git commit --message "$subject" --message "$body"
           # Force-push so reruns replace a stale branch; a push to a branch
           # with an open PR updates that PR.
           git push --force origin "$head"
-          if [ -z "$(gh pr list --head "$head" --state open --json number --jq '.[].number')" ]; then
+          pr=$(gh pr list --head "$head" --state open --json number --jq '.[0].number')
+          if [ -z "$pr" ]; then
             gh pr create --base "$base" --head "$head" \
-              --title "Automated update" \
-              --body "Weekly \`just update\` + \`just update-nixpkgs\`."
+              --title "$subject" --body "$body"
+          else
+            # a force-push changed the PR's contents; resync its description
+            gh pr edit "$pr" --title "$subject" --body "$body"
           fi
