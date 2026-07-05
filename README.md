@@ -20,8 +20,12 @@ pkgs/
 Create `pkgs/by-name/<shard>/<pname>/package.nix` (e.g. `pkgs/by-name/fo/foo/package.nix`),
 where `<shard>` is the lowercased first two letters of `<pname>`. The file is a normal
 `callPackage`-style expression, exactly like a nixpkgs `package.nix`. Discovery is
-automatic — no other file needs to change. Remember to `git add` the new file so the
-flake can see it.
+automatic — no other file needs to change. Remember that flakes only see git-tracked
+files: `git add --intent-to-add` the new file so nix can see it without staging it.
+
+To make the package updatable by `just update`, declare `passthru.updateScript`
+(usually `nix-update-script { }`) or ship a custom `update.sh` next to it — see
+[Updating](#updating).
 
 ## Usage
 
@@ -47,10 +51,43 @@ merge the whole set into nixpkgs via the overlay:
 nixpkgs.overlays = [ my-packages.overlays.default ];
 ```
 
-## Development
+## Updating
+
+There are two independent update axes. Package versions are pinned by
+`version` + hashes inside each `package.nix` and are updated by per-package
+update commands (also wired as `passthru.updateScript`). The nixpkgs pin in
+`flake.lock` (Go toolchain, stdenv, lib) is updated separately — `nix flake
+update` never changes package versions.
 
 ```sh
-nix flake check      # builds every package
-nix fmt              # format nix files (nixfmt)
-nix develop          # shell with nixfmt, nix-init, etc.
+just update                  # update every package to its latest upstream release
+just update ttn-lw-cli       # update specific packages
+just update-nixpkgs          # bump the nixpkgs pin (flake.lock)
+```
+
+`just update` needs no per-package configuration; it follows a convention:
+
+* a package with a custom updater ships an `update.sh` next to its
+  `package.nix`, and that script is run;
+* otherwise, a package that declares `passthru.updateScript` is updated with
+  [`nix-update`](https://github.com/Mic92/nix-update), which understands the
+  standard fetchers and builders (version bump, `src` hash, `vendorHash`, ...);
+* packages with neither are skipped.
+
+After updating, verify with `just check`, which builds every package and runs
+their build-time checks (e.g. `versionCheckHook`). Note that `nix-update`
+refreshes `flake.lock` as a side effect of evaluating the flake; the update
+recipe reverts that so nixpkgs bumps stay a deliberate, separate step.
+
+## Development
+
+Common commands live in the `justfile` (run a bare `just` to list them):
+
+```sh
+just list            # list the packages this flake provides
+just check           # nix flake check — builds and tests every package
+just build <pkg>     # nix build .#<pkg>
+just run <pkg> ...   # nix run .#<pkg> -- ...
+just fmt             # format nix files (nixfmt)
+nix develop          # shell with just, nix-update, nix-init, nixfmt
 ```

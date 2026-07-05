@@ -42,8 +42,10 @@
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           packages = [
-            pkgs.nixfmt
+            pkgs.just
             pkgs.nix-init
+            pkgs.nix-update
+            pkgs.nixfmt
           ];
         };
       });
