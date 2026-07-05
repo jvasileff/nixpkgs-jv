@@ -17,7 +17,20 @@
         "aarch64-darwin"
       ];
 
-      forAllSystems = f: lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+      # import nixpkgs ourselves (rather than using legacyPackages) so we can
+      # pass config: we knowingly pin a release supporting x86_64-darwin, so
+      # silence its deprecation warning.
+      forAllSystems =
+        f:
+        lib.genAttrs systems (
+          system:
+          f (
+            import nixpkgs {
+              inherit system;
+              config.allowDeprecatedx86_64Darwin = true;
+            }
+          )
+        );
     in
     {
       # Every package under ./pkgs, filtered to those available on each system.
