@@ -46,16 +46,22 @@ jobs:
             echo "Everything already up to date."
             exit 0
           fi
+          # The PR targets whatever branch the workflow ran on: cron only
+          # ever runs on the default branch, and manual dispatch on a test
+          # branch stays confined to it (see DEVELOP.md "Testing").
+          base="$GITHUB_REF_NAME"
+          head="auto-update"
+          [ "$base" = "main" ] || head="auto-update-$base"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git switch --create auto-update
+          git switch --create "$head"
           git add --all
           git commit --message "Automated update"
           # Force-push so reruns replace a stale branch; a push to a branch
           # with an open PR updates that PR.
-          git push --force origin auto-update
-          if [ -z "$(gh pr list --head auto-update --state open --json number --jq '.[].number')" ]; then
-            gh pr create --base main --head auto-update \
+          git push --force origin "$head"
+          if [ -z "$(gh pr list --head "$head" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base "$base" --head "$head" \
               --title "Automated update" \
               --body "Weekly \`just update\` + \`just update-nixpkgs\`."
           fi

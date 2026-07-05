@@ -46,3 +46,20 @@ with `GITHUB_TOKEN` get their `pull_request` runs in an
 
 Removing the click (auto-dispatching the checks) and auto-merge are
 possible follow-ups — see [TODO.md](TODO.md).
+
+## Testing the automation
+
+Never rehearse on `main`. The update workflow targets whatever branch it
+was dispatched on (cron only ever runs on the default branch, so a test
+branch is manual-only by construction):
+
+1. Create a test branch with something stale for the updater to find:
+   `git switch -c automation-test main`, set an old version/hash in some
+   `package.nix` (or revert a previous update commit), push the branch.
+2. `gh workflow run update --ref automation-test`. The run should update
+   the stale package, push `auto-update-automation-test`, and open a PR
+   based on `automation-test` — `main` is never touched.
+3. On the PR: click "Approve workflows to run" and watch the four checks.
+   Dispatch again to confirm a rerun force-pushes into the same PR.
+4. Clean up: close the PR, delete `auto-update-automation-test` and
+   `automation-test`.
