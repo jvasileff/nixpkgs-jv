@@ -49,9 +49,11 @@ build pkg:
 run pkg *args:
     nix run .#{{ pkg }} -- {{ args }}
 
-# Build and test every package (per-package checks run at build time)
+# Build and test every package for the current system (each package's tests
+# run during its build); other systems are evaluation-checked only — building
+# for them requires a builder of that platform (e.g. CI)
 check:
-    nix flake check
+    nix flake check --all-systems
 
 # Format nix files
 fmt:

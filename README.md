@@ -85,8 +85,10 @@ just update-nixpkgs          # bump the nixpkgs pin (flake.lock)
   standard fetchers and builders (version bump, `src` hash, `vendorHash`, ...);
 * packages with neither are skipped.
 
-After updating, verify with `just check`, which builds every package and runs
-their build-time checks (e.g. `versionCheckHook`). Note that `nix-update`
+After updating, verify with `just check`, which builds every package for the
+current system, running each package's build-time checks (test suites,
+`versionCheckHook`), and evaluation-checks the other platforms. Full build
+coverage of all platforms needs a builder per platform — that's CI's job. Note that `nix-update`
 refreshes `flake.lock` as a side effect of evaluating the flake; the update
 recipe reverts that so nixpkgs bumps stay a deliberate, separate step.
 
@@ -96,7 +98,8 @@ Common commands live in the `justfile` (run a bare `just` to list them):
 
 ```sh
 just list            # list the packages this flake provides
-just check           # nix flake check — builds and tests every package
+just check           # build + test every package for the current system;
+                     # eval-check all other platforms
 just build <pkg>     # nix build .#<pkg>
 just run <pkg> ...   # nix run .#<pkg> -- ...
 just fmt             # format nix files (nixfmt)
