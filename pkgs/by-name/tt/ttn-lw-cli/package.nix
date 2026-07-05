@@ -10,7 +10,7 @@
 
 buildGoModule (finalAttrs: {
   pname = "ttn-lw-cli";
-  version = "3.36.0";
+  version = "3.36.1";
 
   src = fetchFromGitHub {
     owner = "TheThingsNetwork";
