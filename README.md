@@ -1,18 +1,18 @@
-# Personal Nix package set
+# nixpkgs-jv
 
 A flake of personal packages that aren't available in [nixpkgs](https://github.com/NixOS/nixpkgs),
 structured the same way nixpkgs is.
 
 ## Layout
 
-```
-flake.nix                                  # flake outputs (packages, overlay, checks, ...)
+```sh
+flake.nix            # flake outputs (packages, overlay, checks, ...)
 pkgs/
-  default.nix                              # auto-discovers everything under by-name/
+  default.nix        # auto-discovers everything under by-name/
   by-name/
-    <shard>/                               # first two letters of the package name
+    <shard>/         # first two letters of the package name
       <pname>/
-        package.nix                        # callPackage-style package definition
+        package.nix  # callPackage-style package definition
 ```
 
 ## Adding a package
@@ -40,15 +40,15 @@ As a flake input:
 
 ```nix
 {
-  inputs.my-packages.url = "github:<you>/<this-repo>";
+  inputs.nixpkgs-jv.url = "github:jvasileff/nixpkgs-jv";
 }
 ```
 
-Then either use packages directly (`my-packages.packages.${system}.hello-flake`) or
+Then either use packages directly (`nixpkgs-jv.packages.${system}.hello-flake`) or
 merge the whole set into nixpkgs via the overlay:
 
 ```nix
-nixpkgs.overlays = [ my-packages.overlays.default ];
+nixpkgs.overlays = [ nixpkgs-jv.overlays.default ];
 ```
 
 This flake pins nixpkgs to `nixos-26.05` (the last release to support
@@ -56,11 +56,25 @@ x86_64-darwin). Consumers can rebase it onto their own nixpkgs — unstable, a
 newer stable, etc. — with:
 
 ```nix
-inputs.my-packages.inputs.nixpkgs.follows = "nixpkgs";
+inputs.nixpkgs-jv.inputs.nixpkgs.follows = "nixpkgs";
 ```
 
 (Overlay consumers get this for free: an overlay always builds against the
 package set it's applied to.)
+
+### Registry alias
+
+For CLI convenience, add this flake to the local registry on your machines:
+
+```sh
+nix registry add nixpkgs-jv github:jvasileff/nixpkgs-jv
+```
+
+Packages can then be run from anywhere, just like `nixpkgs#hello`:
+
+```sh
+nix run nixpkgs-jv#ttn-lw-cli
+```
 
 ## Updating
 
@@ -88,9 +102,10 @@ just update-nixpkgs          # bump the nixpkgs pin (flake.lock)
 After updating, verify with `just check`, which builds every package for the
 current system, running each package's build-time checks (test suites,
 `versionCheckHook`), and evaluation-checks the other platforms. Full build
-coverage of all platforms needs a builder per platform — that's CI's job. Note that `nix-update`
-refreshes `flake.lock` as a side effect of evaluating the flake; the update
-recipe reverts that so nixpkgs bumps stay a deliberate, separate step.
+coverage of all platforms needs a builder per platform — that's CI's job.
+Note that `nix-update` refreshes `flake.lock` as a side effect of evaluating
+the flake; the update recipe reverts that so nixpkgs bumps stay a deliberate,
+separate step.
 
 ## Development
 
