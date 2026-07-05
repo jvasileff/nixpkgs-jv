@@ -1,0 +1,61 @@
+name: update
+
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Mondays 05:00 UTC
+  workflow_dispatch:
+
+# The default GITHUB_TOKEN suffices: since June 2026, pull_request runs on
+# PRs created with it start in an approval-required state instead of being
+# suppressed, so the weekly PR needs one "Approve workflows to run" click
+# (see DEVELOP.md). PR creation also needs the "Allow GitHub Actions to
+# create and approve pull requests" repo setting.
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Nix
+        run: |
+          curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+          echo /nix/var/nix/profiles/default/bin >> "$GITHUB_PATH"
+
+      # Two invocations: `update` takes package names variadically, so
+      # `just update update-nixpkgs` would look for a package by that name.
+      - name: Update packages
+        run: nix run nixpkgs#just -- update
+
+      - name: Update nixpkgs pin
+        run: nix run nixpkgs#just -- update-nixpkgs
+
+      # Open the PR before tests pass: failures should surface as a red PR,
+      # not vanish in the Actions tab.
+      - name: Push branch and open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Everything already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create auto-update
+          git add --all
+          git commit --message "Automated update"
+          # Force-push so reruns replace a stale branch; a push to a branch
+          # with an open PR updates that PR.
+          git push --force origin auto-update
+          if [ -z "$(gh pr list --head auto-update --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base main --head auto-update \
+              --title "Automated update" \
+              --body "Weekly \`just update\` + \`just update-nixpkgs\`."
+          fi

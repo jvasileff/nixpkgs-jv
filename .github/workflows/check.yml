@@ -1,0 +1,56 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+
+jobs:
+  check:
+    # Stable name: the branch ruleset requires "check (<system>)" by name.
+    name: check (${{ matrix.system }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - system: aarch64-darwin
+            runner: macos-15
+          # x86_64-darwin builds on the ARM runner via Rosetta
+          - system: x86_64-darwin
+            runner: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Nix
+        run: |
+          curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+          echo /nix/var/nix/profiles/default/bin >> "$GITHUB_PATH"
+
+      - name: Enable x86_64-darwin builds via Rosetta
+        if: matrix.system == 'x86_64-darwin'
+        run: |
+          # Rosetta 2 ships on GitHub's arm64 macOS images; install it if
+          # that ever changes.
+          arch -x86_64 /usr/bin/true 2>/dev/null \
+            || sudo softwareupdate --install-rosetta --agree-to-license
+          # extra-platforms is a daemon setting, not a client flag: append it
+          # to the daemon's config and restart the daemon.
+          echo "extra-platforms = x86_64-darwin" | sudo tee -a /etc/nix/nix.conf
+          sudo launchctl kickstart -k system/org.nixos.nix-daemon
+
+      # `just check`, plus a `system` override: nix flake check builds the
+      # checks of the client's `system` only, so the x86_64-darwin job needs
+      # it to build that platform's packages instead of aarch64-darwin's.
+      - name: nix flake check
+        run: nix flake check --all-systems -L --option system ${{ matrix.system }}
