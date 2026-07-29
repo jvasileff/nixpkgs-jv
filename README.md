@@ -81,8 +81,8 @@ nix run nixpkgs-jv#ttn-lw-cli
 There are two independent update axes. Package versions are pinned by
 `version` + hashes inside each `package.nix` and are updated by per-package
 update commands (also wired as `passthru.updateScript`). The nixpkgs pin in
-`flake.lock` (Go toolchain, stdenv, lib) is updated separately — `nix flake
-update` never changes package versions.
+`flake.lock` (language toolchains, stdenv, lib) is updated separately — `nix
+flake update` never changes package versions.
 
 ```sh
 just update                  # update every package to its latest upstream release
