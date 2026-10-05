@@ -10,16 +10,16 @@
 
 buildGoModule (finalAttrs: {
   pname = "ttn-lw-cli";
-  version = "3.36.1";
+  version = "3.36.2";
 
   src = fetchFromGitHub {
     owner = "TheThingsNetwork";
     repo = "lorawan-stack";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-VICuWf4+OgbT2iJuUEeuBHymL88COXn4sh3YNZaEJxI=";
+    hash = "sha256-f6IiOtPsZ/quW4ikhfIzvJ7ego5bw4QofSRVyx1Rr8M=";
   };
 
-  vendorHash = "sha256-tWjBNqbyF9xjjgvD/YSeQAnoayyHu5CBIR/taw34PsI=";
+  vendorHash = "sha256-Q33T8+9KuEswIQqUQhCH7dkJxjEEY89SnyihpkyvFIE=";
 
   subPackages = [ "cmd/ttn-lw-cli" ];
 
