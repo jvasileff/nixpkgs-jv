@@ -13,25 +13,25 @@ let
   srcs = {
     x86_64-linux = {
       suffix = "linux_amd64";
-      hash = "sha256-dvmskCVn20BRjOG6AyxxDDJIlnaKQaQZZDy0XtIDrVQ=";
+      hash = "sha256-61AshMtJwOTRHgTbtDiWnrFd7M48slbYHZM2fe62KY0=";
     };
     aarch64-linux = {
       suffix = "linux_arm64";
-      hash = "sha256-RxCiq3LyDoR/1VPIEBgi4U4BUTaJvukI//w9quh9Eo8=";
+      hash = "sha256-qDlKuzr8Or7pak7R9VW5nmbarhp4T+7fufr/37PE2ho=";
     };
     x86_64-darwin = {
       suffix = "darwin_amd64";
-      hash = "sha256-Uimc5enH2ofNP1c4GxDzdJ+5P9Gdf455zCP2GS3xBII=";
+      hash = "sha256-5qimOBEFDvOs9LOAYCeqj19kbJRAEsI0rJwSBdNvWCs=";
     };
     aarch64-darwin = {
       suffix = "darwin_arm64";
-      hash = "sha256-0SjNmJnGHWqSiJ/dSNZQ6gLOwnFZUYrB0ZEIkGH0Zq8=";
+      hash = "sha256-ig0+wb0Ct5WgtqIaBryOFF0etc7orqNkyGNUvbtlZ5w=";
     };
   };
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "ttn-lw-cli-bin";
-  version = "3.36.1";
+  version = "3.36.2";
 
   src =
     let
