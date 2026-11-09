@@ -28,10 +28,13 @@ update *names:
             "$dir/update.sh"
         elif nix eval ".#$name.updateScript" --apply 'x: true' >/dev/null 2>&1; then
             echo "==> $name (nix-update)"
+            # nix-update touches the lock as a side effect; undo only that,
+            # keeping any pin bump made earlier (`just update-nixpkgs`)
+            lock=$(mktemp)
+            cp flake.lock "$lock"
             nix run nixpkgs#nix-update -- --flake "$name"
-            # nix-update touches the lock as a side effect;
-            # nixpkgs bumps stay deliberate (`just update-nixpkgs`)
-            git checkout -- flake.lock
+            cp "$lock" flake.lock
+            rm "$lock"
         else
             echo "==> $name: no update script, skipping"
         fi

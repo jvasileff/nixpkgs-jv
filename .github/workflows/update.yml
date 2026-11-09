@@ -30,11 +30,13 @@ jobs:
 
       # Two invocations: `update` takes package names variadically, so
       # `just update update-nixpkgs` would look for a package by that name.
-      - name: Update packages
-        run: nix run nixpkgs#just -- update
-
+      # Bump the pin first so packages are updated against the new
+      # toolchains.
       - name: Update nixpkgs pin
         run: nix run nixpkgs#just -- update-nixpkgs
+
+      - name: Update packages
+        run: nix run nixpkgs#just -- update
 
       # Open the PR before tests pass: failures should surface as a red PR,
       # not vanish in the Actions tab.
