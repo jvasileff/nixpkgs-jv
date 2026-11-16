@@ -32,7 +32,10 @@ update *names:
             # keeping any pin bump made earlier (`just update-nixpkgs`)
             lock=$(mktemp)
             cp flake.lock "$lock"
-            nix run nixpkgs#nix-update -- --flake "$name"
+            # 1.15+ uses flake metadata paths that newer Nix may not materialize;
+            # 1.14 evaluates the working tree directly, including after edits.
+            # Remove this pin when https://github.com/Mic92/nix-update/issues/687 is fixed.
+            nix run github:Mic92/nix-update/3199e0f61d2517ea0639f4815c40903e8e92fc24 -- --flake "$name"
             cp "$lock" flake.lock
             rm "$lock"
         else
